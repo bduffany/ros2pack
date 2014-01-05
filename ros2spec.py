@@ -7,8 +7,8 @@ import argparse
 import urllib.request
 
 import pdb
-# Encapsulates a list of dependencies
 class DependencyStore:
+  """Encapsulates a list of dependencies"""
 
   _cache = {}
 
@@ -22,9 +22,8 @@ class DependencyStore:
 
     def resolve(self):
       if not subprocess.call(
-        ['rospack','find',self._name], stdout = subprocess.DEVNULL, 
-        stderr = subprocess.DEVNULL
-      ):
+          ['rospack','find',self._name], stdout = subprocess.DEVNULL, 
+          stderr = subprocess.DEVNULL):
         self._resolved_name = self._name
         return
 
@@ -61,8 +60,9 @@ binding for {name} for this OS?""".format(self._name))
   def run_packages(self):
     return self._run.values()
 
-# Extracts the text from a node, stripping any tags and removing excess whitespace
+
 def extract_all_text(element):
+  "Extracts the text from a node, stripping any tags and removing excess whitespace"
   mod_lst = []
   for text in element.itertext():
     if type(text) == list:
@@ -71,7 +71,6 @@ def extract_all_text(element):
   return re.sub('\s+', ' ', "".join(mod_lst).strip())
 
 class RPMSpec:
-
   def factory(packagePath, wsPath, override, distro):
     tree = etree.parse(packagePath+"/package.xml")
     root = tree.getroot()
@@ -102,8 +101,7 @@ class RPMSpec:
       else:
         source = re.sub(',.*', '', str_out)
 
-    def elementText(element):
-      return element.text
+    elementText = lambda e: e.text
 
     dependencies = DependencyStore(
       list(map(elementText, root.findall('buildtool_depend'))),
@@ -136,7 +134,6 @@ class RPMSpec:
     self.distro = distro
 
   def generate_service(self, stream):
-    
     download_files_srv = """  <service name="download_files"/>"""
     tar_scm_srv = """  <service name="tar_scm">
     <param name="url">{source}</param>
@@ -171,14 +168,13 @@ BuildRequires:  python-rosmanifestparser
 
     # correction for tar_scm
     if re.search("(\.git)$", self.source):
-      src = self.name + '-' + self.version
+      src = self.name + '-' + self.version + '.tar'
     else:
       src = self.source
 
-    stream.write(header_template.format(pkg_name = self.name,
-                                        version = self.version, license = self.license,
-                                        summary = self.summary, url = self.url,
-                                        source = src))
+    stream.write(header_template.format(pkg_name = self.name, 
+      version = self.version, license = self.license, summary = self.summary, 
+      url = self.url, source = src))
 
     for build_dependency in sorted(map(str, self.dependencies.build_packages())):
       stream.write("BuildRequires:  {0}\n".format(build_dependency))
@@ -229,8 +225,8 @@ rmdir %{{?buildroot}}%{{install_dir}}/lib/pkgconfig
       name = self.name, has_python = self.has_python, 
       install_space = "/opt/ros/" + self.distro))
 
-# Allows overriding summary and description, and allows ignoring a package
 class PackageOverride:
+  """Allows overriding summary and description, and allows ignoring a package"""
   def __init__(self, summary = None, description = None, ignore = False):
     self.summary = summary
     self.description = description
